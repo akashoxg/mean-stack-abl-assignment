@@ -1,0 +1,12 @@
+{
+  "name": "mean-stack-render-deployment",
+  "version": "1.0.0",
+  "description": "Root configuration for Render deployment",
+  "scripts": {
+    "build": "npm install --prefix backend && npm install --prefix frontend && cd frontend && npx ng build --configuration production && cd .. && mkdir -p backend/public && cp -a frontend/dist/frontend/browser/. backend/public/",
+    "start": "cd backend && node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
