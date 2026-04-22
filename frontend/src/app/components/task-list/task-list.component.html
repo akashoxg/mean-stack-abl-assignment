@@ -1,0 +1,185 @@
+<!-- Hero Section -->
+<section class="hero">
+  <h1>Task <span class="gradient-text">Manager</span></h1>
+  <p class="hero-sub">Full-stack MEAN application with MongoDB, Express.js, Angular &amp; Node.js</p>
+</section>
+
+<!-- Stats Cards -->
+<section class="stats-grid">
+  <div class="stat-card" (click)="setFilter('')" [class.active]="filterStatus() === ''">
+    <span class="stat-number">{{ stats().total }}</span>
+    <span class="stat-label">Total</span>
+  </div>
+  <div class="stat-card stat-pending" (click)="setFilter('pending')" [class.active]="filterStatus() === 'pending'">
+    <span class="stat-number">{{ stats().pending }}</span>
+    <span class="stat-label">⏳ Pending</span>
+  </div>
+  <div class="stat-card stat-progress" (click)="setFilter('in-progress')" [class.active]="filterStatus() === 'in-progress'">
+    <span class="stat-number">{{ stats().inProgress }}</span>
+    <span class="stat-label">🔄 In Progress</span>
+  </div>
+  <div class="stat-card stat-done" (click)="setFilter('completed')" [class.active]="filterStatus() === 'completed'">
+    <span class="stat-number">{{ stats().completed }}</span>
+    <span class="stat-label">✅ Completed</span>
+  </div>
+</section>
+
+<!-- Action Bar -->
+<div class="action-bar">
+  <h2 class="section-title">
+    @if (filterStatus()) {
+      <span>{{ filterStatus() | titlecase }} Tasks</span>
+    } @else {
+      <span>All Tasks</span>
+    }
+    <span class="task-count">({{ filteredTasks().length }})</span>
+  </h2>
+  <button class="btn-create" (click)="openCreateForm()">
+    <span class="btn-icon">+</span> New Task
+  </button>
+</div>
+
+<!-- Error State -->
+@if (error()) {
+  <div class="error-card">
+    <div class="error-icon">⚠️</div>
+    <h3>Connection Error</h3>
+    <p>{{ error() }}</p>
+    <button class="btn-retry" (click)="loadTasks()">Retry</button>
+  </div>
+}
+
+<!-- Loading State -->
+@if (loading()) {
+  <div class="loading-container">
+    <div class="loader"></div>
+    <p>Loading tasks...</p>
+  </div>
+}
+
+<!-- Empty State -->
+@if (!loading() && !error() && filteredTasks().length === 0) {
+  <div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <h3>No tasks yet</h3>
+    <p>Create your first task to get started</p>
+    <button class="btn-create" (click)="openCreateForm()">
+      <span class="btn-icon">+</span> Create Task
+    </button>
+  </div>
+}
+
+<!-- Task List -->
+@if (!loading() && filteredTasks().length > 0) {
+  <div class="task-list">
+    @for (task of filteredTasks(); track task._id) {
+      <div class="task-card" [class]="'task-card priority-' + task.priority" [class.completed]="task.status === 'completed'">
+        <!-- Status Toggle -->
+        <button class="status-toggle" (click)="toggleStatus(task)" [title]="'Status: ' + task.status">
+          <span class="status-icon">{{ getStatusIcon(task.status) }}</span>
+        </button>
+
+        <!-- Task Content -->
+        <div class="task-content">
+          <div class="task-header">
+            <h3 class="task-title" [class.done]="task.status === 'completed'">{{ task.title }}</h3>
+            <span class="priority-badge" [class]="'priority-' + task.priority">
+              {{ getPriorityIcon(task.priority) }} {{ task.priority }}
+            </span>
+          </div>
+          @if (task.description) {
+            <p class="task-desc">{{ task.description }}</p>
+          }
+          <div class="task-meta">
+            <span class="meta-item">{{ getStatusIcon(task.status) }} {{ task.status }}</span>
+            @if (task.dueDate) {
+              <span class="meta-item">📅 {{ task.dueDate | date:'mediumDate' }}</span>
+            }
+            <span class="meta-item time-ago">{{ getTimeAgo(task.createdAt) }}</span>
+          </div>
+        </div>
+
+        <!-- Task Actions -->
+        <div class="task-actions">
+          <button class="btn-action btn-edit" (click)="openEditForm(task)" title="Edit">✏️</button>
+          <button class="btn-action btn-delete" (click)="deleteTask(task)" title="Delete">🗑️</button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Modal Form -->
+@if (showForm()) {
+  <div class="modal-overlay" (click)="closeForm()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingTask() ? 'Edit Task' : 'Create New Task' }}</h2>
+        <button class="btn-close" (click)="closeForm()">✕</button>
+      </div>
+
+      <form (ngSubmit)="submitForm()" class="task-form">
+        <div class="form-group">
+          <label for="title">Title *</label>
+          <input
+            type="text"
+            id="title"
+            [(ngModel)]="formTitle"
+            name="title"
+            placeholder="What needs to be done?"
+            required
+            autofocus
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea
+            id="description"
+            [(ngModel)]="formDescription"
+            name="description"
+            placeholder="Add more details..."
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" [(ngModel)]="formStatus" name="status">
+              <option value="pending">⏳ Pending</option>
+              <option value="in-progress">🔄 In Progress</option>
+              <option value="completed">✅ Completed</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="priority">Priority</label>
+            <select id="priority" [(ngModel)]="formPriority" name="priority">
+              <option value="low">🟢 Low</option>
+              <option value="medium">🟡 Medium</option>
+              <option value="high">🔴 High</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="dueDate">Due Date</label>
+          <input
+            type="date"
+            id="dueDate"
+            [(ngModel)]="formDueDate"
+            name="dueDate"
+          >
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" (click)="closeForm()">Cancel</button>
+          <button type="submit" class="btn-submit">
+            {{ editingTask() ? 'Update Task' : 'Create Task' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
